@@ -1,28 +1,24 @@
 import {
-  orkesConductorClient,
-  TaskManager,
+  OrkesClients,
+  TaskHandler,
+  worker,
 } from "@io-orkes/conductor-javascript";
 
-const worker = {
-  taskDefName: "myTask",
-  execute: async (task) => {
-    console.log(task)
-    return {
-      outputData: {
-        hello: "Hello " + task.inputData?.name,
-      },
-      status: "COMPLETED",
-    };
-  },
-};
+const myTask = worker({ taskDefName: "myTask" })(async (task) => {
+  return {
+    outputData: {
+      hello: "Hello " + task.inputData?.name,
+    },
+    status: "COMPLETED",
+  };
+});
 
-const config = {
-  serverUrl: "https://developer.orkescloud.com/api",
-  keyId: "_CHANGE_ME_",
-  keySecret: "_CHANGE_ME_",
-};
+const clients = await OrkesClients.from();
 
-const client = await orkesConductorClient(config);
+const handler = new TaskHandler({
+  client: clients.getClient(),
+  scanForDecorated: true,
+});
 
-const manager = new TaskManager(client, [worker]);
-manager.startPolling();
+await handler.startWorkers();
+console.log("Worker is running. Press Ctrl+C to stop.");
